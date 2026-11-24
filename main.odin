@@ -1,8 +1,11 @@
 package main
 
+import "base:runtime"
 import "core:c"
 import "core:fmt"
+import "core:log"
 import "core:math"
+import "core:slice"
 import "core:strings"
 import "core:time"
 import mu "vendor:microui"
@@ -22,21 +25,27 @@ DirectionVectors :: [Direction]Vector2 {
 	.Down  = {0, 1},
 }
 
-bullet_spawner: ^BulletSpawner
+bullet_spawner: RingSpawner
 bullet_speed: f32 = 50
 spawner_angle: f32 = 0
 
-main :: proc() {
-	defer delete(KEY_MAP)
+@(fini)
+_delete_constant_maps :: proc "contextless" () {
+	context = runtime.default_context()
+	delete(KEY_MAP)
+}
 
+main :: proc() {
 	init()
 	defer quit()
 
 	frame_watch: time.Stopwatch
 	time.stopwatch_start(&frame_watch)
 
-	bullet_spawner = new_bullet_spawner({640, 360}, 6)
-	defer free_bullet_spawner(&bullet_spawner)
+	bullet_spawner = RingSpawner {
+		position    = {640, 360},
+		num_outputs = 5,
+	}
 
 	running := true
 	for running {
@@ -44,9 +53,6 @@ main :: proc() {
 		frame_time := time.stopwatch_duration(frame_watch)
 		time.stopwatch_reset(&frame_watch)
 		time.stopwatch_start(&frame_watch)
-
-		@(static) counter := 0.0 * time.Second
-		counter += frame_time
 
 		@(static) event: sdl.Event
 		for sdl.PollEvent(&event) {
@@ -94,10 +100,13 @@ main :: proc() {
 
 		update(frame_time)
 
+		@(static) counter := 0.0 * time.Millisecond
+		counter += frame_time
 		MAX_STEPS :: 3
 		@(static) steps := 0
-		for counter >= 0 {
-			dt := math.min(frame_time, (1000 / 60) * time.Millisecond)
+		for counter >= 0.0 * time.Millisecond {
+			dt := math.min(frame_time, 16 * time.Millisecond)
+			fmt.println(counter, frame_time, 16 * time.Millisecond)
 			fixed_update(dt)
 			counter -= dt
 			steps += 1
@@ -148,6 +157,7 @@ init :: proc() {
 	global_ctx.mui_ctx.text_height = text_height
 
 	init_input()
+	bullet_list = make([dynamic]Bullet, 0, 128)
 }
 
 quit :: proc() {
@@ -159,31 +169,34 @@ quit :: proc() {
 update :: proc(dt: time.Duration) {
 
 }
+
 DEFAULT_SPAWN_INTERVAL :: 1000
 spawn_interval := DEFAULT_SPAWN_INTERVAL
-
+fixed_update_fps := 0
 fixed_update :: proc(dt: time.Duration) {
 	@(static) time_counter := 0 * time.Second
-	@(static) frame_counter := 0
+	@(static) fixed_update_frame_counter := 0
+
 	time_counter += dt
-	frame_counter += 1
+	fixed_update_frame_counter += 1
 
 	defer if time_counter >= 1 * time.Second {
 		time_counter -= 1 * time.Second
-		fmt.println(frame_counter)
-		frame_counter = 0
+		fixed_update_fps = fixed_update_frame_counter
+		fixed_update_frame_counter = 0
+
+		log.debugf("FPS: %v", fixed_update_frame_counter)
 	}
 
 	@(static) spawn_counter := 0 * time.Second
 
 	spawn_counter += dt
 	if spawn_counter >= time.Duration(spawn_interval) * time.Millisecond {
-		fmt.println("OI!")
 		spawn_bullets(bullet_spawner, f32(bullet_speed), vec_rotate_by(DirectionVectors[.Up], f32(spawner_angle)))
 		spawn_counter = 0
 	}
 
-	update_bullets(bullet_spawner, dt)
+	update_bullets(dt)
 
 	direction: Vector2
 	SPEED :: 300
@@ -198,22 +211,30 @@ fixed_update :: proc(dt: time.Duration) {
 
 render :: proc(dt: time.Duration) {
 	@(static) time_counter := 0 * time.Second
-	@(static) frame_counter := 0
-	@(static) fps := 0
+	@(static) render_frame_counter := 0
+	@(static) render_fps := 0
 	time_counter += dt
-	frame_counter += 1
+	render_frame_counter += 1
 
 	defer if time_counter >= 1 * time.Second {
 		time_counter -= 1 * time.Second
-		fps = frame_counter
-		frame_counter = 0
+		render_fps = render_frame_counter
+		render_frame_counter = 0
+		active_bullet_count := slice.reduce(
+			bullet_list[:],
+			0,
+			proc(count: int, bullet: Bullet) -> int {return bullet.active ? count + 1 : count},
+		)
+
+		log.debugf("Active Bullets: ", active_bullet_count)
 	}
 
-	render_bullets(bullet_spawner)
+	render_bullets()
 	draw_rect({player.position.x, player.position.y, player.spite.w, player.spite.h}, PURPLE)
 
 	sdl.RenderDebugTextFormat(get_renderer(), 0, 0, "Frame Time: %.2f ms", time.duration_milliseconds(dt))
-	sdl.RenderDebugTextFormat(get_renderer(), 0, 10, "FPS: %i", fps)
+	sdl.RenderDebugTextFormat(get_renderer(), 0, 10, "Fixed Update FPS: %i", fixed_update_fps)
+	sdl.RenderDebugTextFormat(get_renderer(), 0, 20, "Renderization FPS: %i", render_fps)
 }
 
 render_ui :: proc(dt: time.Duration) {
@@ -223,7 +244,6 @@ render_ui :: proc(dt: time.Duration) {
 		mu.slider(&global_ctx.mui_ctx, &spawner_angle, 0, 360, 1)
 		mu.slider(&global_ctx.mui_ctx, &bullet_speed, 10, 3000, 1)
 		@(static) interval: f32 = DEFAULT_SPAWN_INTERVAL
-
 		mu.slider(&global_ctx.mui_ctx, &interval, 10, 500, 1)
 		spawn_interval = int(interval)
 	}

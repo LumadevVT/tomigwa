@@ -10,6 +10,8 @@ import "core:time"
 // 	Circle,
 // }
 
+bullet_list: [dynamic]Bullet
+
 Bullet :: struct {
 	position:        Vector2,
 	direction:       Vector2,
@@ -19,61 +21,10 @@ Bullet :: struct {
 	active:          bool,
 }
 
-BulletSpawner :: struct {
-	bullets:     [dynamic]Bullet,
-	position:    Vector2,
-	num_outputs: int,
-}
-
-new_bullet_spawner :: proc(position: Vector2, outputs: int) -> (spawner: ^BulletSpawner) {
-	spawner = new(BulletSpawner)
-	spawner^ = {
-		bullets     = make([dynamic]Bullet, 0, 64),
-		num_outputs = outputs,
-		position    = position,
-	}
-	return spawner
-}
-
-free_bullet_spawner :: proc(spawner: ^^BulletSpawner) {
-	delete(spawner^.bullets)
-	free(spawner^)
-	spawner^ = nil
-}
-
-spawn_bullets :: proc(spawner: ^BulletSpawner, speed: f32, direction: Vector2) {
-	direction_angle := vec_get_degrees(direction)
-	space := 360 / f32(spawner.num_outputs)
-
-	for i in 0 ..< spawner.num_outputs {
-
-		new_bullet := Bullet {
-			position        = spawner.position,
-			active          = true,
-			collider_radius = 10,
-			direction       = vec_rotate_by(direction, space * f32(i)),
-			speed           = speed,
-		}
-
-		any_inactive := false
-		for &bullet, index in spawner.bullets {
-			if bullet.active do continue
-
-			any_inactive = true
-			spawner.bullets[index] = new_bullet
-			// fmt.printfln("Reusing bullet nº %v", index + 1)
-			break
-		}
-		if !any_inactive {
-			append(&spawner.bullets, new_bullet)
-		}
-	}
-}
-
-update_bullets :: proc(spawner: ^BulletSpawner, dt: time.Duration) {
+update_bullets :: proc(dt: time.Duration) {
 	dt_sec := time.duration_seconds(dt)
 
-	for &bullet in spawner.bullets {
+	for &bullet in bullet_list {
 		if !bullet.active do continue
 
 		if is_off_screen(bullet) {
@@ -97,8 +48,8 @@ is_off_screen :: proc(bullet: Bullet) -> bool {
 	)
 }
 
-render_bullets :: proc(spawner: ^BulletSpawner) {
-	for bullet in spawner.bullets {
+render_bullets :: proc() {
+	for bullet in bullet_list {
 		if !bullet.active do continue
 
 		draw_circle(bullet.position, bullet.collider_radius, {RED.r, RED.g, RED.b, 50})

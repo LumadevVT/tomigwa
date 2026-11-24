@@ -128,7 +128,3 @@ draw_line :: proc(start, end: Vector2, color: Color) {
 	set_draw_color(color)
 	sdl.RenderLine(get_renderer(), start.x, start.y, end.x, end.y)
 }
-
-// draw_rounded_rectangle :: proc(rect: Rect) {
-// 	coords_to_pivot(rect, .Center)
-// }
