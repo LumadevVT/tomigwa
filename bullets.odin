@@ -5,11 +5,6 @@ import "core:math"
 import "core:slice"
 import "core:time"
 
-// Collider :: union {
-// 	Rect,
-// 	Circle,
-// }
-
 bullet_list: [dynamic]Bullet
 
 Bullet :: struct {

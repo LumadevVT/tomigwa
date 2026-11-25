@@ -28,6 +28,7 @@ DirectionVectors :: [Direction]Vector2 {
 bullet_spawner: RingSpawner
 bullet_speed: f32 = 50
 spawner_angle: f32 = 0
+slow_factor: f32 = 1.0
 
 @(fini)
 _delete_constant_maps :: proc "contextless" () {
@@ -100,21 +101,14 @@ main :: proc() {
 
 		update(frame_time)
 
+		@(static) update_fps := 60
+		FRAME_LIMIT := time.Duration(1_000_000_000 / update_fps)
 		@(static) counter := 0.0 * time.Millisecond
 		counter += frame_time
-		MAX_STEPS :: 3
-		@(static) steps := 0
-		for counter >= 0.0 * time.Millisecond {
-			dt := math.min(frame_time, 16 * time.Millisecond)
-			fmt.println(counter, frame_time, 16 * time.Millisecond)
-			fixed_update(dt)
-			counter -= dt
-			steps += 1
-			if steps >= MAX_STEPS {
-				break
-			}
+		for counter >= FRAME_LIMIT {
+			fixed_update(FRAME_LIMIT)
+			counter -= FRAME_LIMIT
 		}
-		steps = 0
 
 		clear_canvas(RAYWHITE)
 
@@ -148,7 +142,7 @@ init :: proc() {
 		return
 	}
 
-	sdl.SetRenderVSync(get_renderer(), 1)
+	// sdl.SetRenderVSync(get_renderer(), 1)
 	sdl.SetDefaultTextureScaleMode(get_renderer(), .PIXELART)
 	sdl.SetRenderDrawBlendMode(get_renderer(), {.BLEND})
 
@@ -161,6 +155,7 @@ init :: proc() {
 }
 
 quit :: proc() {
+	delete(bullet_list)
 	shutdown_input()
 	sdl.DestroyRenderer(global_ctx.renderer)
 	sdl.DestroyWindow(global_ctx.window)
@@ -246,5 +241,6 @@ render_ui :: proc(dt: time.Duration) {
 		@(static) interval: f32 = DEFAULT_SPAWN_INTERVAL
 		mu.slider(&global_ctx.mui_ctx, &interval, 10, 500, 1)
 		spawn_interval = int(interval)
+		mu.slider(&global_ctx.mui_ctx, &slow_factor, 0.0, 1.0, 0.1)
 	}
 }
