@@ -28,7 +28,7 @@ DirectionVectors :: [Direction]Vector2 {
 bullet_spawner: RingSpawner
 bullet_speed: f32 = 50
 spawner_angle: f32 = 0
-slow_factor: f32 = 1.0
+update_fps := 60
 
 @(fini)
 _delete_constant_maps :: proc "contextless" () {
@@ -101,7 +101,7 @@ main :: proc() {
 
 		update(frame_time)
 
-		@(static) update_fps := 60
+
 		FRAME_LIMIT := time.Duration(1_000_000_000 / update_fps)
 		@(static) counter := 0.0 * time.Millisecond
 		counter += frame_time
@@ -241,6 +241,5 @@ render_ui :: proc(dt: time.Duration) {
 		@(static) interval: f32 = DEFAULT_SPAWN_INTERVAL
 		mu.slider(&global_ctx.mui_ctx, &interval, 10, 500, 1)
 		spawn_interval = int(interval)
-		mu.slider(&global_ctx.mui_ctx, &slow_factor, 0.0, 1.0, 0.1)
 	}
 }

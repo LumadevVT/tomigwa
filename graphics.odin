@@ -91,17 +91,15 @@ draw_rect_filled :: proc(rect: Rect, color: Color, pivot := Pivot.Center) {
 }
 
 draw_circle :: proc(pos: Vector2, radius: f32, color: Color, pivot := Pivot.Center) {
-	pivot_pos := coords_to_pivot({pos.x, pos.y, radius * 2, radius * 2}, pivot)
-
 	l := radius * math.cos_f32(math.PI / 4)
 	set_draw_color(color)
 	for x in 0 ..= l {
 		y := math.sqrt(radius * radius - x * x)
 
-		sdl.RenderLine(get_renderer(), pivot_pos.x - x, pivot_pos.y + y, pivot_pos.x + x, pivot_pos.y + y)
-		sdl.RenderLine(get_renderer(), pivot_pos.x - x, pivot_pos.y - y, pivot_pos.x + x, pivot_pos.y - y)
-		sdl.RenderLine(get_renderer(), pivot_pos.x - y, pivot_pos.y + x, pivot_pos.x + y, pivot_pos.y + x)
-		sdl.RenderLine(get_renderer(), pivot_pos.x - y, pivot_pos.y - x, pivot_pos.x + y, pivot_pos.y - x)
+		sdl.RenderLine(get_renderer(), pos.x - x, pos.y + y, pos.x + x, pos.y + y)
+		sdl.RenderLine(get_renderer(), pos.x - x, pos.y - y, pos.x + x, pos.y - y)
+		sdl.RenderLine(get_renderer(), pos.x - y, pos.y + x, pos.x + y, pos.y + x)
+		sdl.RenderLine(get_renderer(), pos.x - y, pos.y - x, pos.x + y, pos.y - x)
 	}
 
 }
