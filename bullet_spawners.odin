@@ -15,6 +15,20 @@ SpreadSpawner :: struct {
 	num_outputs:  i32,
 }
 
+spawn_bullet :: proc(new_bullet: Bullet) {
+	any_inactive := false
+	for &bullet, index in bullet_list {
+		if bullet.active do continue
+
+		any_inactive = true
+		bullet_list[index] = new_bullet
+		break
+	}
+	if !any_inactive {
+		append(&bullet_list, new_bullet)
+	}
+}
+
 spawn_bullets :: proc {
 	spawn_bullets_radial,
 	spawn_bullets_spread,
@@ -33,17 +47,7 @@ spawn_bullets_radial :: proc(spawner: RingSpawner, speed: f32, direction: Vector
 			speed           = speed,
 		}
 
-		any_inactive := false
-		for &bullet, index in bullet_list {
-			if bullet.active do continue
-
-			any_inactive = true
-			bullet_list[index] = new_bullet
-			break
-		}
-		if !any_inactive {
-			append(&bullet_list, new_bullet)
-		}
+		spawn_bullet(new_bullet)
 	}
 }
 
