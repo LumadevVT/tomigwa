@@ -23,8 +23,45 @@ Pivot :: enum {
 	BottomRight,
 }
 
-coords_to_pivot :: proc(rect: Rect, pivot: Pivot) -> Vector2 {
-	new_pos: Vector2
+coords_to_pivot :: proc {
+	coords_to_pivot_rect,
+	coords_to_pivot_circle,
+}
+
+coords_to_pivot_circle :: proc(circle: Circle, pivot: Pivot) -> (new_pos: Vector2) {
+	switch pivot {
+	case .TopLeft:
+		new_pos.y = circle.position.y - circle.radius
+		new_pos.x = circle.position.x - circle.radius
+	case .Top:
+		new_pos.y = circle.position.y - circle.radius
+		new_pos.x = circle.position.x
+	case .TopRight:
+		new_pos.y = circle.position.y - circle.radius
+		new_pos.x = circle.position.x + circle.radius
+	case .CenterLeft:
+		new_pos.y = circle.position.y
+		new_pos.x = circle.position.x - circle.radius
+	case .Center:
+		new_pos.y = circle.position.y
+		new_pos.x = circle.position.x
+	case .CenterRight:
+		new_pos.y = circle.position.y
+		new_pos.x = circle.position.x + circle.radius
+	case .BottomLeft:
+		new_pos.y = circle.position.y + circle.radius
+		new_pos.x = circle.position.x - circle.radius
+	case .Bottom:
+		new_pos.y = circle.position.y + circle.radius
+		new_pos.x = circle.position.x
+	case .BottomRight:
+		new_pos.y = circle.position.y + circle.radius
+		new_pos.x = circle.position.x + circle.radius
+	}
+	return new_pos
+}
+
+coords_to_pivot_rect :: proc(rect: Rect, pivot: Pivot) -> (new_pos: Vector2) {
 	switch pivot {
 	case .TopLeft:
 		new_pos.y = rect.y
@@ -105,7 +142,7 @@ draw_circle :: proc(pos: Vector2, radius: f32, color: Color, pivot := Pivot.Cent
 }
 
 draw_circle_line :: proc(pos: Vector2, radius: f32, color: Color, pivot := Pivot.Center) {
-	pivot_pos := coords_to_pivot({pos.x, pos.y, radius * 2, radius * 2}, pivot)
+	pivot_pos := coords_to_pivot({pos, radius}, pivot)
 
 	l := radius * math.cos_f32(math.PI / 4)
 	set_draw_color(color)

@@ -225,6 +225,7 @@ render :: proc(dt: time.Duration) {
 	}
 
 	render_bullets()
+	draw_circle(bullet_spawner.position, 25, BLUE)
 	draw_rect({player.position.x, player.position.y, player.spite.w, player.spite.h}, PURPLE)
 
 	sdl.RenderDebugTextFormat(get_renderer(), 0, 0, "Frame Time: %.2f ms", time.duration_milliseconds(dt))
